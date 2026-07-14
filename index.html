@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA暗号 鍵作成体験シミュレーター</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #111827;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .step-num {
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .result-box {
+            background-color: #f9fafb;
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 12px;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .info-note {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 6px;
+        }
+
+        .status {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .status.success { color: var(--success); }
+        .status.error { color: var(--error); }
+
+        .candidates-list {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .candidate-tag {
+            background-color: #eff6ff;
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .candidate-tag:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #111827;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>RSA暗号 鍵作成シミュレーター</h1>
+        <p class="subtitle">好きな数を入力して、暗号の仕組みを体験しよう！</p>
+    </header>
+
+    <!-- STEP 1 -->
+    <div class="card">
+        <div class="card-title"><span class="step-num">1</span>2つの素数を決める</div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="p-input">素数 p</label>
+                <input type="number" id="p-input" value="17">
+                <div id="p-status" class="status"></div>
+            </div>
+            <div class="form-group">
+                <label for="q-input">素数 q</label>
+                <input type="number" id="q-input" value="19">
+                <div id="q-status" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="card">
+        <div class="card-title"><span class="step-num">2</span>公開鍵 N と N' を計算する</div>
+        <p>2つの素数の積 <i>N</i> と、それぞれの素数から1を引いた数の積 <i>N'</i> を計算します。</p>
+        <div class="result-box">
+            <div>• 公開鍵 <strong>N</strong> (p × q) = <span id="n-val" class="highlight">-</span></div>
+            <div>• <strong>N'</strong> ((p - 1) × (q - 1)) = <span id="n-prime-val" class="highlight">-</span></div>
+        </div>
+        <div class="info-note">※資料の「最小公倍数 N' = 288」は、数学的には (17 - 1) × (19 - 1) = 16 × 18（積）を指しています。このツールでもその計算式を使用します。</div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="card">
+        <div class="card-title"><span class="step-num">3</span>互いに素となる自然数 e を選ぶ</div>
+        <div class="form-group">
+            <label for="e-input">自然数 e (N' と互いに素な数)</label>
+            <input type="number" id="e-input" value="67">
+            <div id="e-status" class="status"></div>
+        </div>
+        <div>
+            <span class="info-note">候補（クリックで自動入力）:</span>
+            <div id="e-candidates" class="candidates-list"></div>
+        </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="card">
+        <div class="card-title"><span class="step-num">4</span>秘密鍵 d を探す</div>
+        <p>「e × d ÷ N'」の余りが <strong style="color: var(--primary);">1</strong> となるような秘密鍵 <i>d</i> を自動計算します。</p>
+        <button id="calc-d-btn">秘密鍵 d を計算する</button>
+        <div class="result-box">
+            <div>• 秘密鍵 <strong>d</strong> = <span id="d-val" class="highlight">-</span></div>
+            <div id="d-equation-val" class="info-note" style="margin-top: 8px;"></div>
+        </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="card" style="background-color: #f0fdf4; border-color: #bbf7d0;">
+        <div class="card-title" style="border-bottom-color: #bbf7d0;"><span class="step-num" style="background-color: var(--success);">5</span>暗号化と復号を試してみる</div>
+        <p>作成した鍵を使って、実際に数値を暗号化・復号してみましょう。</p>
+        
+        <div class="grid-2">
+            <div>
+                <strong>公開鍵(N, e)</strong>: (<span id="pub-n">-</span>, <span id="pub-e">-</span>)
+            </div>
+            <div>
+                <strong>秘密鍵 d</strong>: <span id="priv-d">-</span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+            <label for="message-input">暗号化する数値 M (N 未満の数)</label>
+            <input type="number" id="message-input" value="100">
+            <div id="m-status" class="status"></div>
+        </div>
+
+        <div class="grid-2">
+            <button id="encrypt-btn" style="background-color: var(--success);">① 暗号化する</button>
+            <button id="decrypt-btn" style="background-color: #059669;">② 復号する</button>
+        </div>
+
+        <div class="result-box" style="background-color: #ffffff;">
+            <div>• 暗号文 <strong>C</strong> (M<sup>e</sup> mod N) = <span id="cipher-val" class="highlight">-</span></div>
+            <div>• 元に戻した数値 <strong>M'</strong> (C<sup>d</sup> mod N) = <span id="decrypted-val" class="highlight">-</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- ユーティリティ関数（BigInt対応） ---
+    function gcd(a, b) {
+        while (b !== 0n) {
+            let temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+
+    function isPrime(n) {
+        if (n < 2n) return false;
+        for (let i = 2n; i * i <= n; i++) {
+            if (n % i === 0n) return false;
+        }
+        return true;
+    }
+
+    function powerMod(base, exp, mod) {
+        let res = 1n;
+        base = BigInt(base) % BigInt(mod);
+        exp = BigInt(exp);
+        const m = BigInt(mod);
+        while (exp > 0n) {
+            if (exp % 2n === 1n) res = (res * base) % m;
+            base = (base * base) % m;
+            exp = exp / 2n;
+        }
+        return res;
+    }
+
+    // 拡張ユークリッド互除法で d を求める
+    function modInverse(e, m) {
+        let m0 = m;
+        let y = 0n, x = 1n;
+        if (m === 1n) return 0n;
+        while (e > 1n) {
+            if (m === 0n) return 0n; // 割り切れない場合
+            let q = e / m;
+            let t = m;
+            m = e % m;
+            e = t;
+            t = y;
+            y = x - q * y;
+            x = t;
+        }
+        if (x < 0n) x += m0;
+        return x;
+    }
+
+    // --- UI操作ロジック ---
+    const pInput = document.getElementById('p-input');
+    const qInput = document.getElementById('q-input');
+    const pStatus = document.getElementById('p-status');
+    const qStatus = document.getElementById('q-status');
+    
+    const nVal = document.getElementById('n-val');
+    const nPrimeVal = document.getElementById('n-prime-val');
+    
+    const eInput = document.getElementById('e-input');
+    const eStatus = document.getElementById('e-status');
+    const eCandidates = document.getElementById('e-candidates');
+    
+    const calcDBtn = document.getElementById('calc-d-btn');
+    const dVal = document.getElementById('d-val');
+    const dEquationVal = document.getElementById('d-equation-val');
+    
+    const pubN = document.getElementById('pub-n');
+    const pubE = document.getElementById('pub-e');
+    const privD = document.getElementById('priv-d');
+    
+    const messageInput = document.getElementById('message-input');
+    const mStatus = document.getElementById('m-status');
+    const encryptBtn = document.getElementById('encrypt-btn');
+    const decryptBtn = document.getElementById('decrypt-btn');
+    const cipherVal = document.getElementById('cipher-val');
+    const decryptedVal = document.getElementById('decrypted-val');
+
+    let p = 17n;
+    let q = 19n;
+    let N = 323n;
+    let NPrime = 288n;
+    let e = 67n;
+    let d = 43n;
+
+    function updateStep1And2() {
+        p = BigInt(pInput.value || 0);
+        q = BigInt(qInput.value || 0);
+
+        // 素数判定
+        const pIsP = isPrime(p);
+        const qIsP = isPrime(q);
+
+        pStatus.textContent = pIsP ? '✓ 素数です' : '✗ 素数ではありません';
+        pStatus.className = 'status ' + (pIsP ? 'success' : 'error');
+        
+        qStatus.textContent = qIsP ? '✓ 素数です' : '✗ 素数ではありません';
+        qStatus.className = 'status ' + (qIsP ? 'success' : 'error');
+
+        // N, N' 計算
+        N = p * q;
+        NPrime = (p > 1n && q > 1n) ? (p - 1n) * (q - 1n) : 0n;
+
+        nVal.textContent = N.toString();
+        nPrimeVal.textContent = NPrime.toString();
+
+        updateECandidates();
+        updateEStatus();
+    }
+
+    function updateECandidates() {
+        eCandidates.innerHTML = '';
+        if (NPrime <= 1n) return;
+
+        let count = 0;
+        for (let i = 2n; i < NPrime; i++) {
+            if (gcd(i, NPrime) === 1n) {
+                const tag = document.createElement('span');
+                tag.className = 'candidate-tag';
+                tag.textContent = i.toString();
+                tag.addEventListener('click', () => {
+                    eInput.value = i.toString();
+                    updateEStatus();
+                });
+                eCandidates.appendChild(tag);
+                count++;
+                if (count >= 5) break; // 最大5個表示
+            }
+        }
+    }
+
+    function updateEStatus() {
+        e = BigInt(eInput.value || 0);
+        if (NPrime <= 1n) {
+            eStatus.textContent = '先に正しい素数 p, q を入力してください。';
+            eStatus.className = 'status error';
+            return;
+        }
+
+        if (e <= 1n || e >= NPrime) {
+            eStatus.textContent = `✗ e は 1 より大きく ${NPrime} より小さい必要があります。`;
+            eStatus.className = 'status error';
+            return;
+        }
+
+        const isCoprime = gcd(e, NPrime) === 1n;
+        if (isCoprime) {
+            eStatus.textContent = '✓ N\' と互いに素です（使用可能）';
+            eStatus.className = 'status success';
+        } else {
+            eStatus.textContent = `✗ N\' と互いに素ではありません（最大公約数: ${gcd(e, NPrime)}）`;
+            eStatus.className = 'status error';
+        }
+        
+        // 鍵作成情報の更新
+        pubN.textContent = N.toString();
+        pubE.textContent = e.toString();
+    }
+
+    // 秘密鍵 d の計算
+    calcDBtn.addEventListener('click', () => {
+        if (gcd(e, NPrime) !== 1n) {
+            alert('e が N\' と互いに素ではありません。ステップ3で正しい e を選んでください。');
+            return;
+        }
+
+        d = modInverse(e, NPrime);
+        dVal.textContent = d.toString();
+        privD.textContent = d.toString();
+
+        // 検証式の表示
+        const product = e * d;
+        const remainder = product % NPrime;
+        dEquationVal.textContent = `計算検証: ${e} × ${d} ＝ ${product} (これを ${NPrime} で割った余りは ${remainder} です)`;
+    });
+
+    // メッセージのバリデーション
+    messageInput.addEventListener('input', () => {
+        const m = BigInt(messageInput.value || 0);
+        if (m >= N) {
+            mStatus.textContent = `⚠ 数値は N (${N}) 未満にしてください（正しく復号できなくなります）。`;
+            mStatus.className = 'status error';
+        } else {
+            mStatus.textContent = '';
+        }
+    });
+
+    // 暗号化
+    encryptBtn.addEventListener('click', () => {
+        const M = BigInt(messageInput.value || 0);
+        if (M >= N) {
+            alert(`入力された数値が N (${N}) 以上です。正しい結果が得られない可能性があります。`);
+        }
+        const C = powerMod(M, e, N);
+        cipherVal.textContent = C.toString();
+        decryptedVal.textContent = '-'; // 復号結果をリセット
+    });
+
+    // 復号
+    decryptBtn.addEventListener('click', () => {
+        const CText = cipherVal.textContent;
+        if (CText === '-') {
+            alert('先に暗号化を行ってください。');
+            return;
+        }
+        const C = BigInt(CText);
+        const MDecrypted = powerMod(C, d, N);
+        decryptedVal.textContent = MDecrypted.toString();
+    });
+
+    // 初期化実行
+    pInput.addEventListener('input', updateStep1And2);
+    qInput.addEventListener('input', updateStep1And2);
+    eInput.addEventListener('input', updateEStatus);
+
+    updateStep1And2();
+</script>
+
+</body>
+</html>
